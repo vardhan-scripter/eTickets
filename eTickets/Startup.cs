@@ -1,13 +1,14 @@
+using eTickets.Data;
+using eTickets.Data.Cart;
+using eTickets.Data.Services;
+using eTickets.Data.Services.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace eTickets
 {
@@ -23,6 +24,22 @@ namespace eTickets
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //DBContextt configurarion
+            services.AddDbContext<AppDbContext>(options => 
+            {
+                options.UseSqlite(Configuration.GetConnectionString("DefaultConnectionString"));
+            });
+
+            // Services configuration
+            services.AddScoped<IActorsService, ActorsService>();
+            services.AddScoped<ICinemasService, CinemasService>();
+            services.AddScoped<IProducersService, ProducersService>();
+            services.AddScoped<IMoviesService, MoviesService>();
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddScoped(sc => ShoppingCart.GetShoppingCart(sc));
+            services.AddScoped<IOrdersService, OrdersService>();
+
+            services.AddSession();
             services.AddControllersWithViews();
         }
 
@@ -43,6 +60,7 @@ namespace eTickets
             app.UseStaticFiles();
 
             app.UseRouting();
+            app.UseSession();
 
             app.UseAuthorization();
 
@@ -52,6 +70,8 @@ namespace eTickets
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
             });
+
+            AppDbInitializer.Seed(app);
         }
     }
 }
